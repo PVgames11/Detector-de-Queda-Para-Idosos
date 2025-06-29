@@ -1,7 +1,7 @@
 # Detector-de-Queda-Para-Idosos
 Este projeto consiste no desenvolvimento de um protótipo funcional para detectar quedas em pessoas idosas, utilizando tecnologias de Internet das Coisas (IoT), com o objetivo de melhorar o tempo de resposta em situações de emergência. O sistema é baseado em uma plataforma com Arduino ESP32, sensores de movimento e um módulo GPS, que envia alertas automaticamente ao cuidador via aplicativo Blynk e e-mail.
 
-#Objetivo
+Objetivo
 O objetivo principal deste projeto é aumentar a segurança de pessoas idosas por meio de um sistema de detecção de quedas que notifica o cuidador em tempo real, incluindo a localização geográfica do evento. O sistema visa ser acessível, eficiente e de fácil utilização, atuando como um suporte à autonomia e qualidade de vida do idoso.
 
 #Parte Interessada
