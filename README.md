@@ -83,6 +83,9 @@ Enviar localização em tempo real com atualização contínua.
 
 ## Considerações Finais
 O projeto demonstrou ser viável como protótipo funcional, com grande potencial para desenvolvimento futuro. A solução representa uma contribuição prática para a segurança da população idosa, promovendo a aplicação de conhecimentos técnicos em benefício da sociedade.
+## Imagem do Projeto
+![image](https://github.com/user-attachments/assets/36e84d0b-6630-4f84-b2f0-4fd1746684d6)
+
 
 ## Licença
 Este projeto foi desenvolvido com fins educacionais e não possui, neste momento, licença comercial.
