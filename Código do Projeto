@@ -1,0 +1,124 @@
+#define BLYNK_TEMPLATE_ID "TMPLGJA9F1s3"
+#define BLYNK_TEMPLATE_NAME "detector de queda"
+#define BLYNK_AUTH_TOKEN "vktZUAMyx2TTnxUlWeKnUEB0WUwY0bEf"
+
+#define BLYNK_PRINT Serial
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <BlynkSimpleEsp32.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+#include <TinyGPS++.h>
+#include <HardwareSerial.h>
+
+// Credenciais Wi-Fi e Blynk
+char auth[] = BLYNK_AUTH_TOKEN;
+char ssid[] = "Motorola One Vision";
+char pass[] = "123456789";
+
+// Objetos dos sensores
+Adafruit_MPU6050 mpu;
+TinyGPSPlus gps;
+HardwareSerial SerialGPS(2); // UART2
+
+#define GPS_RX 16  // RX do ESP32 (conecta ao TX do GPS)
+#define GPS_TX 17  // TX do ESP32 (conecta ao RX do GPS)
+
+BlynkTimer timer;
+bool quedaDetectada = false;
+
+void sendSensor()
+{
+  if (mpu.getMotionInterruptStatus()) {
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+
+    Serial.print("AccelX: "); Serial.print(a.acceleration.x); Serial.print(", ");
+    Serial.print("AccelY: "); Serial.print(a.acceleration.y); Serial.print(", ");
+    Serial.print("AccelZ: "); Serial.print(a.acceleration.z); Serial.print(" | ");
+    Serial.print("GyroX: "); Serial.print(g.gyro.x); Serial.print(", ");
+    Serial.print("GyroY: "); Serial.print(g.gyro.y); Serial.print(", ");
+    Serial.print("GyroZ: "); Serial.println(g.gyro.z);
+
+    Blynk.virtualWrite(V0, a.acceleration.x);
+    Blynk.virtualWrite(V1, a.acceleration.y);
+    Blynk.virtualWrite(V2, a.acceleration.z);
+    Blynk.virtualWrite(V3, g.gyro.x);
+    Blynk.virtualWrite(V4, g.gyro.y);
+    Blynk.virtualWrite(V5, g.gyro.z);
+
+    if (a.acceleration.z <= 3.0 && a.acceleration.z > -3.0 && !quedaDetectada) {
+      quedaDetectada = true;
+      Serial.println("❗ Queda detectada!");
+
+      if (gps.location.isValid()) {
+        float lat = gps.location.lat();
+        float lng = gps.location.lng();
+
+        Serial.print("Localização: ");
+        Serial.print(lat, 6);
+        Serial.print(", ");
+        Serial.println(lng, 6);
+
+        String url = "⚠️ Queda detectada!\n📍 Localização:\nhttps://maps.google.com/?q=" + 
+                      String(lat, 6) + "," + String(lng, 6);
+        Blynk.virtualWrite(V6, url);
+        
+        Blynk.logEvent("queda_detectada", url); 
+      } else {
+        Serial.println("❌ GPS sem sinal no momento.");
+        Blynk.virtualWrite(V6, "❌ Queda detectada, mas sem sinal de GPS.");
+      }
+    }
+  }
+}
+
+void readGPS()
+{
+  while (SerialGPS.available() > 0) {
+    gps.encode(SerialGPS.read());
+  }
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  delay(100);
+
+  WiFi.begin(ssid, pass);
+  Serial.print("Conectando ao Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ Wi-Fi conectado!");
+
+  Blynk.config(auth);
+  Blynk.connect();
+
+  if (!mpu.begin()) {
+    Serial.println("❌ Falha ao encontrar MPU6050");
+    while (1) { delay(10); }
+  }
+  Serial.println("✅ MPU6050 encontrado!");
+
+  mpu.setHighPassFilter(MPU6050_HIGHPASS_0_63_HZ);
+  mpu.setMotionDetectionThreshold(1);
+  mpu.setMotionDetectionDuration(20);
+  mpu.setInterruptPinLatch(true);
+  mpu.setInterruptPinPolarity(true);
+  mpu.setMotionInterrupt(true);
+
+  SerialGPS.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
+  Serial.println("✅ GPS inicializado.");
+
+  timer.setInterval(500L, sendSensor); // Verifica queda
+  timer.setInterval(1000L, readGPS);   // Atualiza GPS
+}
+
+void loop()
+{
+  Blynk.run();
+  timer.run();
+}
